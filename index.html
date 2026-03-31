@@ -1,12 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>textstring</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f0e8; touch-action: none; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #f5f0e8;
+      touch-action: none;
+    }
+
     #container {
       position: relative;
       width: 100%;
@@ -16,9 +30,11 @@
       user-select: none;
       -webkit-user-select: none;
     }
+
     .letter {
       position: absolute;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       will-change: transform;
       font-family: 'Georgia', serif;
       font-size: 20px;
@@ -26,18 +42,46 @@
       color: #4a4a4a;
       pointer-events: none;
     }
+
     .letter.draggable {
       pointer-events: auto;
       cursor: grab;
       z-index: 10;
       touch-action: none;
     }
+
     .letter.dragging {
       cursor: grabbing;
     }
+
+    #controls {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+    }
+
+    #resetBtn {
+      padding: 8px 12px;
+      border: 1px solid #8f836f;
+      border-radius: 8px;
+      background: rgba(255, 252, 246, 0.92);
+      color: #3e3e3e;
+      font-family: Georgia, serif;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #resetBtn:hover {
+      background: rgba(255, 248, 236, 0.96);
+    }
   </style>
 </head>
+
 <body>
+  <div id="controls">
+    <button id="resetBtn" type="button">Reset Text</button>
+  </div>
   <div id="container"></div>
 
   <script type="module">
@@ -69,6 +113,7 @@
     });
 
     const container = document.getElementById('container');
+    const resetBtn = document.getElementById('resetBtn');
     const measureCtx = document.createElement('canvas').getContext('2d');
     measureCtx.font = FONT;
 
@@ -245,6 +290,39 @@
 
     // Drag state — multitouch: map pointerId -> { idx, offsetX, offsetY }
     const drags = new Map();
+
+    function resetTextLayout() {
+      drags.clear();
+      unraveling = false;
+      unravelIdx = -1;
+      gravityOn = true;
+
+      const resetPositions = layoutPositions(getMaxWidth());
+      const unlockedCount = Math.min(6, letters.length);
+      const unlockStart = letters.length - unlockedCount;
+
+      for (let i = 0; i < letters.length; i++) {
+        const l = letters[i];
+        const np = resetPositions[l.readingIdx];
+
+        l.x = np.x;
+        l.y = np.y;
+        l.ox = np.x;
+        l.oy = np.y;
+        l.px = np.x;
+        l.py = np.y;
+        l.locked = i < unlockStart;
+
+        els[i].classList.remove('dragging');
+        if (l.locked) els[i].classList.remove('draggable');
+        else els[i].classList.add('draggable');
+      }
+
+      positionHint();
+      hint.style.opacity = '1';
+    }
+
+    resetBtn.addEventListener('click', resetTextLayout);
 
     function isDragged(idx) {
       for (const d of drags.values()) if (d.idx === idx) return true;
@@ -428,4 +506,5 @@
     requestAnimationFrame(render);
   </script>
 </body>
+
 </html>
